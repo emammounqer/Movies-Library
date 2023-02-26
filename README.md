@@ -7,6 +7,7 @@
 Web-Request-Response-Cycle
 
 ![wrrc img](./assets/wrrc.jpg)
+![wrrc2 img](./assets/wrrc-2.png)
 
 ## Overview
 
@@ -36,4 +37,45 @@ npm start
 
 ## Project Features
 
-get movies data in json format
+get `movies` data in json format
+
+---
+***Get Trending movie From This Url***
+
+`http://localhost:3000/trending`
+
+query :
+
+- page : number
+
+example : `http://localhost:3000/trending?page=2`
+
+---
+***Search movie From This Url***
+
+`http://localhost:3000/search`
+
+query :
+
+- query: string
+- page : number
+
+example : `http://localhost:3000/search?query=The&page=2`
+
+---
+***Get upcoming movie From This Url***
+
+`http://localhost:3000/get-Upcoming`
+
+query :
+
+- page : number
+
+---
+***Get upcoming movie From This Url***
+
+`http://localhost:3000/popular-actor`
+
+query :
+
+- page : number
