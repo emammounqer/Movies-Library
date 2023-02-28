@@ -2,12 +2,17 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const axios = require('axios')
+const pg = require('pg')
+
+// Data base
+const dbClient = new pg.Client(process.env.DB_URL)
 
 // create the server
 const app = express()
 
 // middleware
 app.use(cors())
+app.use(express.json())
 
 //routes
 app.get('/', getHome)
@@ -16,16 +21,27 @@ app.get('/trending', getTrending)
 app.get('/search', getSearchMovie)
 app.get('/get-upcoming', getUpcoming)
 app.get('/popular-actor', getPopularActor)
+app.get('/getMovies', movies_get)
+app.post('/addMovie', movies_create_post)
 
 // error handler
 app.use(errorHandler404)
-app.use(errorHandler500)
+app.use(errorHandler)
 
 // start the server
-const port = 3000
-app.listen(port, () => console.log('Server start ,listen at port: ' + port))
+startServer()
 
 // ----------------------------------------------------------------------------
+async function startServer() {
+    try {
+        const port = 3000
+        await dbClient.connect()
+        app.listen(port, () => console.log('Server start ,listen at port: ' + port))
+    } catch (error) {
+        console.error(error)
+    }
+}
+
 // route handler functions
 function getHome(req, res) {
     const movieData = require('./movie_data/data.json')
@@ -98,6 +114,42 @@ function getPopularActor(req, res, next) {
     })
 }
 
+async function movies_get(req, res, next) {
+    try {
+        const movies = await getMovies()
+        res.json(movies)
+    } catch (error) {
+        next(error)
+    }
+}
+
+async function movies_create_post(req, res, next) {
+    const body = req.body;
+    try {
+        const movie = new Movie(body)
+        const resp = await addMovie(movie, body.comment)
+        res.json(resp)
+    } catch (error) {
+        next(error)
+    }
+}
+
+// services function
+async function getMovies() {
+    const sql = `SELECT * FROM movies`
+    const resp = await dbClient.query(sql)
+    return resp.rows
+}
+
+async function addMovie(movie, comment) {
+    const sql = `INSERT INTO movies (title, release_date, poster_path, overview, comment)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *;`
+    const resp = await dbClient.query(sql, [movie.title, movie.release_date, movie.poster_path, movie.overview, comment])
+    return resp.rows
+
+
+}
+
 // error handler functions
 function errorHandler404(req, res, next) {
     res.status(404)
@@ -107,7 +159,16 @@ function errorHandler404(req, res, next) {
     })
 }
 
-function errorHandler500(err, req, res, next) {
+function errorHandler(err, req, res, next) {
+    if (err.code && (err.code.slice(0, 2) === '23' || err.code.slice(0, 2) === '22')) {
+        console.error(err.message)
+        res.status(400)
+        return res.json({
+            "status": 400,
+            "responseText": "Bad Request",
+            "message": err.message
+        })
+    }
     console.error(err)
     res.status(500)
     res.json({
