@@ -17,12 +17,17 @@ app.use(express.json())
 //routes
 app.get('/', getHome)
 app.get('/favorite', getFavorite)
+
 app.get('/trending', getTrending)
 app.get('/search', getSearchMovie)
 app.get('/get-upcoming', getUpcoming)
 app.get('/popular-actor', getPopularActor)
-app.get('/getMovies', movies_get)
-app.post('/addMovie', movies_create_post)
+
+app.get('/movies', getMoviesHandler)
+app.post('/movies', addMovieHandler)
+app.get('/movies/:id', getMovieHandler)
+app.put('/movies/:id', updateMovieHandler)
+app.delete('/movies/:id', deleteMovieHandler)
 
 // error handler
 app.use(errorHandler404)
@@ -114,7 +119,8 @@ function getPopularActor(req, res, next) {
     })
 }
 
-async function movies_get(req, res, next) {
+// movies route handler
+async function getMoviesHandler(req, res, next) {
     try {
         const movies = await getMovies()
         res.json(movies)
@@ -123,31 +129,95 @@ async function movies_get(req, res, next) {
     }
 }
 
-async function movies_create_post(req, res, next) {
+async function addMovieHandler(req, res, next) {
     const body = req.body;
+    const movie = new Movie(body)
     try {
-        const movie = new Movie(body)
         const resp = await addMovie(movie, body.comment)
+        res.status(201).json(resp)
+    } catch (error) {
+        next(error)
+    }
+}
+
+async function updateMovieHandler(req, res, next) {
+    const id = req.params.id
+    const body = req.body;
+    const updatedMovie = new Movie(body)
+    try {
+        const resp = await updateMovie(id, updatedMovie)
         res.json(resp)
     } catch (error) {
         next(error)
     }
 }
 
-// services function
+async function deleteMovieHandler(req, res, next) {
+    const id = req.params.id
+    try {
+        await deleteMovie(id)
+        res.status(204).json({})
+    } catch (error) {
+        next(error)
+    }
+}
+
+async function getMovieHandler(req, res, next) {
+    const id = req.params.id
+    try {
+        const movies = await getMovie(id)
+        if(movies.length === 0 ) return res.status(204).send();
+        res.json(movies)
+    } catch (error) {
+        next(error)
+    }
+}
+
+// movies services function
 async function getMovies() {
     const sql = `SELECT * FROM movies`
     const resp = await dbClient.query(sql)
     return resp.rows
 }
 
-async function addMovie(movie, comment) {
-    const sql = `INSERT INTO movies (title, release_date, poster_path, overview, comment)
-            VALUES ($1, $2, $3, $4, $5) RETURNING *;`
-    const resp = await dbClient.query(sql, [movie.title, movie.release_date, movie.poster_path, movie.overview, comment])
+async function addMovie(movie) {
+    const sql = `INSERT INTO movies 
+                (title, release_date, poster_path, overview, comment)
+                VALUES ($1, $2, $3, $4, $5) 
+                RETURNING *;`
+    const resp = await dbClient.query(sql, [movie.title, movie.release_date, movie.poster_path, movie.overview, movie.comment])
     return resp.rows
 
 
+}
+
+async function updateMovie(id, updatedMovie) {
+    const setValues = []
+    if(updatedMovie.title) setValues.push(`title = '${updatedMovie.title}'`)
+    if(updatedMovie.release_date) setValues.push(`release_date = '${updatedMovie.release_date}'`)
+    if(updatedMovie.poster_path) setValues.push(`poster_path = '${updatedMovie.poster_path}'`)
+    if(updatedMovie.overview) setValues.push(`overview = '${updatedMovie.overview}'`)
+    if(updatedMovie.comment) setValues.push(`comment = '${updatedMovie.comment}'`)
+
+    const sql = `UPDATE movies 
+                SET ${setValues.join(',')}
+                WHERE id=${id}
+                RETURNING *`
+    
+    const resp = await dbClient.query(sql)
+    return resp.rows
+}
+
+async function deleteMovie(id) {
+    const sql = `DELETE FROM movies WHERE id = ${id}`
+    const resp = await dbClient.query(sql)
+    return resp.rows
+}
+
+async function getMovie(id) {
+    const sql = `SELECT * FROM movies WHERE id = ${id}`
+    const resp = await dbClient.query(sql)
+    return resp.rows
 }
 
 // error handler functions
@@ -184,11 +254,12 @@ function MovieData({ title, poster_path, overview }) {
     this.overview = overview;
 }
 
-function Movie({ id, title, release_date, poster_path, overview }) {
+function Movie({ id, title, release_date, poster_path, overview ,comment}) {
     this.id = id
     this.title = title;
     this.release_date = release_date;
     this.poster_path = poster_path;
     this.overview = overview;
+    this.comment = comment
 }
 
