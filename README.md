@@ -30,6 +30,12 @@ git clone <this repo url>
 cd Movies-Library
 ```
 
+- rename the .env.sample to .env
+
+```sh
+mv .env.sample .env
+```
+
 - start the postgres sql server
 
 > **_NOTE:_**  below command not for all machine, start the server as you know
@@ -115,13 +121,15 @@ query :
 
 ### Get all movies from database
 
-`http://localhost:3000/getMovies`
+`http://localhost:3000/Movies`
 
 ---
 
-### add movie popular actor
+### add movie to database
 
-`http://localhost:3000/popular-actor`
+Method: `POST`
+
+`http://localhost:3000/Movies`
 
 body :
 
@@ -140,5 +148,40 @@ Example:
   "poster_path" : "testpath",
   "overview" : "test overview",
   "comment" : "test comment"
+}
+```
+
+### get movie by Id
+
+`http://localhost:3000/Movies/:id`
+
+### delete movie
+
+Method: `Delete`
+
+`http://localhost:3000/Movies/:id`
+
+
+### add movie to database
+
+Method: `PUT`
+
+`http://localhost:3000/Movies/:id`
+
+body :
+
+- title? : string
+- release_date? : string (date)
+- poster_path? : string
+- overview? : string
+- comment? : string
+
+Example:
+
+```json
+{
+  "title": "updated movie",
+  "release_date" : "1995-12-30",
+  "poster_path" : "newtestpath",
 }
 ```
