@@ -30,7 +30,7 @@ git clone <this repo url>
 cd Movies-Library
 ```
 
-- go inside the repo folder
+- rename the .env.sample to .env
 
 ```sh
 mv .env.sample .env
