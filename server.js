@@ -39,7 +39,7 @@ startServer()
 // ----------------------------------------------------------------------------
 async function startServer() {
     try {
-        const port = 3000
+        const port = process.env.PORT || 3000
         await dbClient.connect()
         app.listen(port, () => console.log('Server start ,listen at port: ' + port))
     } catch (error) {
