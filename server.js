@@ -193,18 +193,15 @@ async function addMovie(movie) {
 
 async function updateMovie(id, updatedMovie) {
     const setValues = []
-    if(updatedMovie.title) setValues.push(`title = '${updatedMovie.title}'`)
-    if(updatedMovie.release_date) setValues.push(`release_date = '${updatedMovie.release_date}'`)
-    if(updatedMovie.poster_path) setValues.push(`poster_path = '${updatedMovie.poster_path}'`)
-    if(updatedMovie.overview) setValues.push(`overview = '${updatedMovie.overview}'`)
-    if(updatedMovie.comment) setValues.push(`comment = '${updatedMovie.comment}'`)
+    const movie = await getMovie(id)
+    const newMovie ={...movie,...updatedMovie} 
 
     const sql = `UPDATE movies 
-                SET ${setValues.join(',')}
+                SET title = $1, release_date = $2 , poster_path = $3 , overview = $4 ,comment = $5
                 WHERE id=${id}
                 RETURNING *`
     
-    const resp = await dbClient.query(sql)
+    const resp = await dbClient.query(sql,[newMovie.title,newMovie.release_date,newMovie.poster_path,newMovie.overview,newMovie.comment])
     return resp.rows
 }
 
